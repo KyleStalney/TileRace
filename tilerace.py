@@ -4,7 +4,7 @@ import random
 import discord
 from discord import Client
 
-_tiers = enumerate(['Mechanical', 'Minigames', 'Skilling', 'Early Game', 'Mid Game', 'Late Game', 'End Game', 'MYSTERY'])
+_tiers = ['Mechanical', 'Minigames', 'Skilling', 'Early Game', 'Mid Game', 'Late Game', 'End Game', 'MYSTERY']
 _paths = {
     'start': [3,1,2,4,2,7,5,0,2,5,6,1,6,0,4,1,2,7,4,5,2,0,5],
     'long': [],
