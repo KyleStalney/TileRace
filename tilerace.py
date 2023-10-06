@@ -1,8 +1,81 @@
-import discord
-from discord import Client
-import responses
+import json
 import random
 
+import discord
+from discord import Client
+
+class TileRace():
+    self.easy = []
+    self.teams = []
+    self.signups = []
+
+    def __init__(self):
+        with open('tilerace.json') as f:
+            data = json.load(f)
+        if not data:
+            raise Exception('Failed to load data from tilerace.json')
+        self.teams = data.get('teams', None)
+        self.signups = data.get('teams', None)
+
+    def save(self):
+        data = []
+        data['teams'] = self.teams
+        data['signups'] = self.signups
+        with open('tilerace.json', 'w') as f:
+            f.write(json.dumps(data))
+
+    async def signup(self, message):
+        if message.author not in self.signups:
+            self.signups.append(message.author)
+        await message.add_reaction('\U00002705')
+        self.save()
+        log.info(f'signup,{message.author},added to signups')
+
+    async def list(self, message):
+        mod_role = message.guild.get_role(690247456587382805)
+        if mod_role not in message.author.roles:
+            return
+        await message.reply(self.signups.join('\n'))
+
+    def challenges(self, user):
+        current_team = self.teams[user[0]]
+        if current_team[4] == 'easy':
+            for i in self.easy:
+                if easy[i][0][current_team[0]]:
+                    print(str(i) + ": " + str(easy[i][1]))
+
+    def roll(self, message):
+        user = message.author
+        current_team = self.teams[user[0]]
+        if current_team[2] and message == '!roll':
+            dice = random.randint(dice_dict[current_team[4]][0], dice_dict[current_team[4]][1])
+            dice = dice_roll(current_team[4])
+            new_sum = current_team[3] + dice
+            if new_sum + 1 >= len(tile_list_a):
+                print('exceeds bound')
+                current_team[3] = new_sum % len(tile_list_a)
+            else:
+                current_team[3] += dice
+                print("You rolled a " + str(dice) + ", moving you to position " + str(
+                    current_team[3]) + ", which is a " + str(tile_list_a[new_sum + 1]) + " tile")
+
+            current_team[2] = False
+            current_team[3] = new_sum % len(tile_list_a)
+        if message == 'no':
+            x += 1
+        if "!complete" in message:
+            complete_tile(user, message, 'checkmark', user2)
+        if message == "!challenges":
+            show_challenges(user)
+        teams[user[0]] = current_team
+
+    def dice_roll(dice_type: str) -> int:
+        if dice_type == 'easy':
+            return random.randint(0, 3)
+        if dice_type == 'medium':
+            return random.randint(1, 4)
+        if dice_type == 'hard':
+            return random.randint(2, 5)
 
 entrants = ["brando2277","trevor6396","samw1se","imkoch","detox_.","zaq6136","greekfr3ak.","joosii69","drpat34","andrewxc","red_rascal","thurison","prosups","n.o.r.s.e","diblydoobly","Matsoe/Chubou#7052","bosspross","SteelTiiTan#2864","muovvi","shook_em","iclicked","vorpeo","pondscum4954","Benjamin#4104","rigidryan","odors","pandorite","fespoof","sicknez","dillon4579","robbrec","dirtydimsum","tranbearpig","iblake","mir4culous","atlasstoned","deathking13","yawp.","nerds3378","shwoopgodlordking","creedmoor1049","montaro","Muzzle#3031","giganticowl","bobarctor","thecabe","ivar__","milftastic","Sweaty Nasty#8061","themightykake","elbomb","Matt777#9811","Ward Fe#9736","Brother Shame#1426","kingkurask","wethenorth","xploh","athief",".hellpup","brenden39","motozzi","gilfrid_eggs"]
 
@@ -77,35 +150,6 @@ async def on_message(message):
     print(rsn_list)
     for i in range(len(rsn_list)):
         print(rsn_list[i][1])
-def show_challenges(user):
-    current_team = teams[user[0]]
-    if current_team[4] == 'easy':
-        for i in easy:
-            if easy[i][0][current_team[0]]:
-                print(str(i) + ": " + str(easy[i][1]))
-
-def dice_roll(user, message):
-    current_team = teams[user[0]]
-    if current_team[2] and message == '!roll':
-        dice = random.randint(dice_dict[current_team[4]][0], dice_dict[current_team[4]][1])
-        new_sum = current_team[3] + dice
-        if new_sum + 1 >= len(tile_list_a):
-            print('exceeds bound')
-            current_team[3] = new_sum % len(tile_list_a)
-        else:
-            current_team[3] += dice
-            print("You rolled a " + str(dice) + ", moving you to position " + str(
-                current_team[3]) + ", which is a " + str(tile_list_a[new_sum + 1]) + " tile")
-
-        current_team[2] = False
-        current_team[3] = new_sum % len(tile_list_a)
-    if message == 'no':
-        x += 1
-    if "!complete" in message:
-        complete_tile(user, message, 'checkmark', user2)
-    if message == "!challenges":
-        show_challenges(user)
-    teams[user[0]] = current_team
 
 
 client.run(TOKEN)
