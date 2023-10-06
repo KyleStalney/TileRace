@@ -1,3 +1,3 @@
-# T I L E M A P
+# T I L E R A C E
 
-tilemap bot for runescape
+tilerace bot for runescape
