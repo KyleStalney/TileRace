@@ -7,9 +7,9 @@ log.setLevel(logging.INFO)
 
 _tiers = ['Mechanical', 'Minigames', 'Skilling', 'Early Game', 'Mid Game', 'Late Game', 'End Game', 'MYSTERY']
 _paths = {
-    'start': [3, 1, 2, 4, 2, 7, 5, 0, 2, 5, 5, 1, 6, 0, 4, 1, 2, 7, 4, 5, 2, 0, 5],
-    'long': [7, 0, 6, 5, 1, 2, 5, 3, 4, 2, 1, 7, 4, 3, 0],
-    'short': [2, 1, 5, 6, 5, 0, 1, 7, 6, 5],
+    'start': [3, 1, 2, 4, 2, 7, 5, 0, 2, 5, 6, 1, 5, 0, 4, 1, 2, 7, 4, 5, 2, 0, 5],
+    'long': [7, 0, 6, 5, 3, 1, 2, 5, 3, 4, 2, 1, 7, 4, 3, 0],
+    'short': [2, 1, 5, 6, 5, 0, 5, 1, 7, 4, 6, 5],
     'end': [5, 7, 1, 3, 1, 6, 0, 3, 4, 5, 6, 0, 5, 4, 2, 7]
 }
 
@@ -62,12 +62,21 @@ class TileRace:
         team_name = self.get_team(str(message.author))
         team = self.teams[team_name]
         temp = message.content.split(" ")
+        if not team["choice"]:
+            return
         path = temp[1].lower()
         if path == 'short' or path == 'long':
             team['path'] = path
-            message.reply(
-                f"{team_name} has chosen the {path.title()} path."
+            team['tile_tier'] = get_tier(team['path'],team['tile'])
+            self.setup_challenges(team)
+            await message.reply(
+                f"{team_name} has chosen the {path.title()} path.\nThey are now on position {team['tile'] + 1} which is a {team['tile_tier'].title()} Tile\n"
+                f"{self.get_challenges(message)}"
+
             )
+        team['choice'] = False
+        self.teams[team_name] = team
+        self.save()
 
     def get_team(self, user):
         for team in self.teams:
@@ -87,12 +96,18 @@ class TileRace:
             return
         await message.reply('\n'.join(self.signups))
 
-    async def get_challenges(self, message):
+    def get_challenges(self, message):
         team = self.teams[self.get_team(message.author)]
         challenges = [x["description"] for x in team["challenges"]]
         for i in range(len(challenges)):
             challenges[i] = f"{i + 1}. {challenges[i]}"
-        await message.reply("## Current Challenges\n" + '\n'.join(challenges))
+        return "## Current Challenges\n" + '\n'.join(challenges)
+
+    async def get_position(self, message):
+        locations = "\n".join(
+            [f'**{x}**: {self.teams[x]["tile"] + 1} on **{self.teams[x]["path"].title()}**' for x in self.teams])
+        response = f'## Current Positions\n{locations}'
+        await message.reply(response)
 
     async def roll_back(self, message):
         team_name = self.get_team(str(message.author))
@@ -105,18 +120,14 @@ class TileRace:
 
         team['tile'] = new_pos
         team['tile_tier'] = get_tier(team['path'], team['tile'])
-        a = 'a'
         self.setup_challenges(team)
-        challenges = [x["description"] for x in team["challenges"]]
-        for i in range(len(challenges)):
-            challenges[i] = f"{i + 1}. {challenges[i]}"
-
+        a = 'a'
         if team['tile_tier'][0] == 'E':
             a = 'an'
         await message.reply(
             f"You have rolled a {dice}.\n"
             f"This brings you back to position **{new_pos + 1}** on the {team['path'].title()} path, which is {a} **{team['tile_tier']} tile**.\n"
-            f"## Current Challenges\n" + '\n'.join(challenges)
+            f"{self.get_challenges(message)}"
         )
         self.teams[team_name] = team
         self.save()
@@ -130,31 +141,40 @@ class TileRace:
         team['can_roll'] = False
         cur_path = _paths[team['path']]
         new_pos = team['tile'] + dice
+        response = ""
         if new_pos + 1 > len(cur_path):
             if team['path'] == 'start':
                 team['tile'] = new_pos - len(cur_path)
 
-                await message.reply(
+                response = (
                     f"You have rolled a {dice}.\n"
-                    f"**{team_name}** have reached the fork. Now you must make a `!choice` on which [path](<https://google.com>) to take.\n"
+                    f"**{team_name}** have reached the fork. Now you must make a `!choice` on which [path](<https://discord.com/channels/593246772273348630/1158571432054378516>) to take.\n"
                     "Type `!choice long` for the long path, and `!choice short` for the short path.\n"
-                    f"You will land on position {team['tile']}."
+                    f"You will land on position {team['tile'] + 1}."
                 )
-
+                team['choice'] = True
+                await message.reply(response)
+                self.teams[team_name] = team
+                self.save()
+                return
             if team['path'] == 'end':
-                new_pos = len(cur_path)
+                new_pos = len(cur_path) - 1
                 team['tile'] = new_pos
                 team['tile_tier'] = get_tier(team['path'], team['tile'])
                 self.setup_challenges(team)
-                await message.reply(
+                response = (
                     f"You rolled a {dice}!\nMoving **{team_name}** to position **{new_pos + 1}** on **the {team['path'].title()} path**")
 
             if team['path'] == 'long' or team['path'] == 'short':
                 team['tile'] = new_pos - len(cur_path)
                 team['path'] = 'end'
-                await message.reply(
+                team['tile_tier'] = get_tier(team['path'], team['tile'])
+                a = 'a'
+                if team['tile_tier'][0] == 'E':
+                    a = 'an'
+                response = (
                     f"You have rolled a {dice}.\n"
-                    f"**{team_name}** have reached the end of the fork. You are now on **the end path** at position {team['tile']}."
+                    f"**{team_name}** have reached the end of the fork. You are now on **the end path** at position {team['tile'] + 1}, which is {a} **{team['tile_tier']}** Tile."
                 )
 
 
@@ -162,19 +182,27 @@ class TileRace:
 
             team['tile'] = new_pos
             team['tile_tier'] = get_tier(team['path'], team['tile'])
-            await message.reply(
-                f"You rolled a {dice}!\nMoving **{team_name}** to position {new_pos + 1}, which is a {team['tile_tier']} tile.\n"
-                f""
+            a = 'a'
+            if team['tile_tier'][0] == 'E':
+                a = 'an'
+            response = (
+                f"You rolled a {dice}!\nMoving **{team_name}** to position {new_pos + 1} on path {team['path'].title()}, which is {a} {team['tile_tier']} tile."
             )
-        self.setup_challenges(team)
         self.teams[team_name] = team
         self.save()
+        self.setup_challenges(team)
+        await message.reply(response + "\n\n" + self.get_challenges(message))
 
-    async def complete(self, message, reaction, user):
+    async def complete(self, message, user):
         # get user team
         team_name = self.get_team(str(message.author))
         team = self.teams[team_name]
+        if '✔️' in [x.emoji for x in message.reactions]:
+            return
         if team["challenges"] == []:
+            return
+        mod_role = message.guild.get_role(1160016095428739122)
+        if mod_role not in user.roles:
             return
         # check if there are challenges currently
         # make sure message format
@@ -187,14 +215,17 @@ class TileRace:
             return
         team["challenges"] = []
         team["can_roll"] = True
-        if team['path'] == 'end' and team['tile'] == len(_paths['end']):
+        await message.add_reaction('✔️')
+        if team['path'] == 'end' and team['tile'] == len(_paths['end']) - 1:
+            member_role = message.guild.get_role(1160351670182608946)
             await message.reply(
-                f"{team_name} wins yay."
+                f"{member_role.mention}\n"
+                f"{team_name} win : ) yay."
             )
             return
 
         await message.reply(
-            f"**{team_name}** has completed: *{challenge}*\nThe team has been granted a `!roll`"
+            f"**{team_name}** have completed: *{challenge}* on position {team['tile'] + 1} of the {team['path'].title()} path.\nThe team has been granted a `!roll`"
         )
         self.teams[team_name] = team
         self.save()

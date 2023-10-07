@@ -1,9 +1,9 @@
 import discord
 import logging
-
+import os
 from tilerace import TileRace
 
-TOKEN='MTE2MDAwOTY1ODMzMzkzNzY3NQ.G6c8p4.zsr5nP73KYvDCvxuIEUfwP9FdrQADW_LysLsZs'
+TOKEN= os.environ['BOT_TOKEN']
 client = discord.Client(intents=discord.Intents.all())
 race = TileRace()
 
@@ -29,7 +29,7 @@ async def on_reaction_add(reaction, user):
     channel = client.get_channel(1159942565408280597)
     if channel != reaction.message.channel:
         return
-    await race.complete(reaction.message, reaction, user)
+    await race.complete(reaction.message, user)
 
 @client.event
 async def on_message(m):
@@ -42,11 +42,13 @@ async def on_message(m):
     if m.content == '!roll':
         await race.roll(m)
     if m.content == '!challenges':
-        await race.get_challenges(m)
+        await m.reply(race.get_challenges(m))
     if m.content == '!roll_back':
         await race.roll_back(m)
-    if m.content[0:6] == '!choice':
+    if m.content.startswith('!choice'):
         await race.choice(m)
+    if m.content == '!positions':
+        await race.get_position(m)
 
 
 client.run(TOKEN)
