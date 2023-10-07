@@ -1,24 +1,31 @@
 import json
 import random
+import logging
 
-import discord
-from discord import Client
+log = logging.getLogger(__name__)
+log.setLevel(logging.INFO)
 
 _tiers = ['Mechanical', 'Minigames', 'Skilling', 'Early Game', 'Mid Game', 'Late Game', 'End Game', 'MYSTERY']
 _paths = {
-    'start': [3,1,2,4,2,7,5,0,2,5,6,1,6,0,4,1,2,7,4,5,2,0,5],
-    'long': [],
-    'short': [],
-    'end': [],
+    'start': [3, 1, 2, 4, 2, 7, 5, 0, 2, 5, 5, 1, 6, 0, 4, 1, 2, 7, 4, 5, 2, 0, 5],
+    'long': [7, 0, 6, 5, 1, 2, 5, 3, 4, 2, 1, 7, 4, 3, 0],
+    'short': [2, 1, 5, 6, 5, 0, 1, 7, 6, 5],
+    'end': [5, 7, 1, 3, 1, 6, 0, 3, 4, 5, 6, 0, 5, 4, 2, 7]
 }
+
 
 def get_tier(path, tile):
     return _tiers[_paths[path][tile]]
 
-class TileRace():
-    self.teams = {}
-    self.signups = []
-    self.challenges = {}
+
+def dice_roll() -> int:
+    return random.randint(1, 5)
+
+
+class TileRace:
+    teams = {}
+    signups = []
+    challenges = {}
 
     def __init__(self):
         with open('tilerace.json') as f:
@@ -26,346 +33,168 @@ class TileRace():
         if not data:
             raise Exception('Failed to load data from tilerace.json')
         self.teams = data.get('teams', None)
-        self.signups = data.get('teams', None)
+        self.signups = data.get('signups', None)
         self.challenges = data.get('challenges', None)
-        self.setup_teams()
 
-    def setup_teams(self):
-        for team in self.teams:
-            for tier in team['challenges']:
-                if not tier:
-                    team['challenges'][tier] = self.challenges[tier]
-            if (
-                not team['path']
-                or not team['tile']
-                or not team['tile_tier']
-            ):
-                team['tile'] = 0
-                team['path'] = 'start'
-                team['tile_tier'] = _tiers[_paths['start'][0]]
+    def setup_challenges(self, team):
+        current_challenges = self.challenges[team["tile_tier"]].copy()
+        # pick 3 random challenges from challenge list, put in new list, save them to teams challenges
+        new_challenges = []
+        ranger = range(3)
+        if team['tile_tier'] == 'MYSTERY':
+            ranger = range(1)
+        for i in ranger:
+            roll = random.randint(0, len(current_challenges) - 1)
+            new_challenges.append(current_challenges.pop(roll))
+        team["challenges"] = new_challenges
 
     def save(self):
-        data = []
-        data['teams'] = self.teams
-        data['signups'] = self.signups
-        data['challenges'] = self.challenges
+        data = {
+            "teams": self.teams,
+            'signups': self.signups,
+            'challenges': self.challenges
+        }
+
         with open('tilerace.json', 'w') as f:
             f.write(json.dumps(data))
 
+    async def choice(self, message):
+        team_name = self.get_team(str(message.author))
+        team = self.teams[team_name]
+        temp = message.content.split(" ")
+        path = temp[1].lower()
+        if path == 'short' or path == 'long':
+            team['path'] = path
+            message.reply(
+                f"{team_name} has chosen the {path.title()} path."
+            )
+
     def get_team(self, user):
-        for name, team in self.teams:
-            if user in team['members']: return name
+        for team in self.teams:
+            if str(user) in self.teams[team]['members']: return team
 
     async def signup(self, message):
         if message.author not in self.signups:
-            self.signups.append(message.author)
-        await message.add_reaction('\U00002705')
+            self.signups.append(str(message.author))
+        kyle = await message.guild.fetch_emoji(1160014756040687626)
+        await message.add_reaction(kyle)
         self.save()
         log.info(f'signup,{message.author},added to signups')
 
     async def list(self, message):
-        mod_role = message.guild.get_role(690247456587382805)
+        mod_role = message.guild.get_role(1160016095428739122)
         if mod_role not in message.author.roles:
             return
-        await message.reply(self.signups.join('\n'))
+        await message.reply('\n'.join(self.signups))
 
-    async def challenges(self, message):
+    async def get_challenges(self, message):
         team = self.teams[self.get_team(message.author)]
-        tier = get_tier(team['path'], team['tile'])
-        challenges = [x['description'] for x in team['challenges'][tier]]
-        await message.reply(challenges.join('\n'))
+        challenges = [x["description"] for x in team["challenges"]]
+        for i in range(len(challenges)):
+            challenges[i] = f"{i + 1}. {challenges[i]}"
+        await message.reply("## Current Challenges\n" + '\n'.join(challenges))
 
-    async def roll(self, message):
-        team_name = self.get_team(message.author)
+    async def roll_back(self, message):
+        team_name = self.get_team(str(message.author))
         team = self.teams[team_name]
-        if message.author != team['captain']:
-            return
-        if not team['can_roll']:
-            return
-        dice = dice_roll(team['path'])
-        team['can_roll'] = False
+        dice = random.randint(1, 3)
         cur_path = _paths[team['path']]
-        new_pos = team['tile'] + dice
-        if new_pos + 1 >= len(cur_path):
-            if team['path'] == 'start':
-                # Prompt for path choice
-                choice = ''
-                team['path'] = choice
-                team['tile'] = new_pos - len(cur_path)
-                team['tile_tier'] = get_tier(team['path'], team['tile'])
-                await message.reply(f'{team_name} has entered the **{team[choice]} path**!')
-        else:
-            team['tile'] = new_pos
-            team['tile_tier'] = get_tier(team['path'], team['tile'])
-            print(f"You rolled a {dice}!\nMoving **{team_name}** to position {new_pos}, which is a {team['tile_tier']} tile.")
+        new_pos = team['tile'] - dice
+        if new_pos < 0:
+            new_pos = 0
+
+        team['tile'] = new_pos
+        team['tile_tier'] = get_tier(team['path'], team['tile'])
+        a = 'a'
+        self.setup_challenges(team)
+        challenges = [x["description"] for x in team["challenges"]]
+        for i in range(len(challenges)):
+            challenges[i] = f"{i + 1}. {challenges[i]}"
+
+        if team['tile_tier'][0] == 'E':
+            a = 'an'
+        await message.reply(
+            f"You have rolled a {dice}.\n"
+            f"This brings you back to position **{new_pos + 1}** on the {team['path'].title()} path, which is {a} **{team['tile_tier']} tile**.\n"
+            f"## Current Challenges\n" + '\n'.join(challenges)
+        )
         self.teams[team_name] = team
         self.save()
 
-    async def complete(message):
-        pass
+    async def roll(self, message):
+        team_name = self.get_team(str(message.author))
+        team = self.teams[team_name]
+        if not team['can_roll']:
+            return
+        dice = dice_roll()
+        team['can_roll'] = False
+        cur_path = _paths[team['path']]
+        new_pos = team['tile'] + dice
+        if new_pos + 1 > len(cur_path):
+            if team['path'] == 'start':
+                team['tile'] = new_pos - len(cur_path)
 
-    def dice_roll(dice_type: str) -> int:
-        if dice_type == 'easy':
-            return random.randint(0, 3)
-        if dice_type == 'medium':
-            return random.randint(1, 4)
-        if dice_type == 'hard':
-            return random.randint(2, 5)
+                await message.reply(
+                    f"You have rolled a {dice}.\n"
+                    f"**{team_name}** have reached the fork. Now you must make a `!choice` on which [path](<https://google.com>) to take.\n"
+                    "Type `!choice long` for the long path, and `!choice short` for the short path.\n"
+                    f"You will land on position {team['tile']}."
+                )
 
-'''
-def complete_tile(user, message, reaction, reaction_user):
-    team = teams[user[0]]
-    if reaction_user[0] != user[0] and reaction_user[1] and reaction == 'checkmark':
-        teams[user[0]][2] = True
-        if message[-1] in tile_dict[team[4]]:
-            if tile_dict[team[4][int(message[-1])]][user[0]] == True:
-                print("Challenge " + str(message[-1]) + " has been completed. Removing from challenges for team " + str(
-                    user[0]))
-                tile_dict[team[4]][int(message[-1])][user[0]] = False
-                print("Team " + str(user[0]) + " has been awarded a dice roll")
+            if team['path'] == 'end':
+                new_pos = len(cur_path)
+                team['tile'] = new_pos
+                team['tile_tier'] = get_tier(team['path'], team['tile'])
+                self.setup_challenges(team)
+                await message.reply(
+                    f"You rolled a {dice}!\nMoving **{team_name}** to position **{new_pos + 1}** on **the {team['path'].title()} path**")
+
+            if team['path'] == 'long' or team['path'] == 'short':
+                team['tile'] = new_pos - len(cur_path)
+                team['path'] = 'end'
+                await message.reply(
+                    f"You have rolled a {dice}.\n"
+                    f"**{team_name}** have reached the end of the fork. You are now on **the end path** at position {team['tile']}."
+                )
+
+
         else:
-            print("invalid completion, please try again")
-'''
 
-'''
-DATA EXAMPLE
-{
-	"teams": {
-		"Team 1": {
-			"tile": 0,
-			"tile_tier": "Mechanical",
-			"can_roll": false,
-			"path": "start",
-			"captain": "kylestanley",
-			"members": ["rudes", "kylestanley"],
-			"challenges": {
-				"Mechanical": [],
-				"Minigames": [],
-				"Skilling": [],
-				"Early Game": [],
-				"Mid Game": [],
-				"Late Game": [],
-				"End Game": [],
-				"MYSTERY": [],
-			}
-		}
-	},
-	"challenges": {
-		"Mechanical": [],
-		"Minigames": [],
-		"Skilling": [],
-		"Early Game": [],
-		"Mid Game": [],
-		"Late Game": [],
-		"End Game": [],
-		"MYSTERY": [],
-	},
-	"signups": ["kylestanley"],
-}
-'''
-"Mechanical" = [{
-        "description": "complete a 500+ toa",
-        "active": False},
-    {
-        "description": "have 3 teammates win an LMS game",
-        "active": False},
-    {
-        "description": "Kill any 3 awakened bosses. You can do the same boss multiple times.",
-        "active": False},
-    {
-        "description": "Punch/Kick Jad to death",
-        "active": False},
-    {
-        "description" : "Get 5 Phosani kc in 1 trip",
-        "active": False
-    }, {
-        "description" : "Get back-to-back sub 7-minute completions of the Corrupted Gauntlet",
-        "active" : False
-    }]
+            team['tile'] = new_pos
+            team['tile_tier'] = get_tier(team['path'], team['tile'])
+            await message.reply(
+                f"You rolled a {dice}!\nMoving **{team_name}** to position {new_pos + 1}, which is a {team['tile_tier']} tile.\n"
+                f""
+            )
+        self.setup_challenges(team)
+        self.teams[team_name] = team
+        self.save()
 
-"Skilling" = [{
-        "description": "Get a Tome of Fire",
-        "active": False},
-    {
-        "description": "Get any Tempoross Unique. Pages that replace unique count",
-        "active": False},
-    {
-        "description": "Get an Abyssal Dye from Guardians of the Rift",
-        "active": False},
-    {
-        "description": "Acquire a Golden Tench",
-        "active": False},
-    {
-        "description" : "Acquire a Ring of Endurance",
-        "active": False},
-    {
-        "description" : "Make a Colossal Blade from scratch",
-        "active" : False},
-    {
-        "description": "Get that stupid pirate hook thing from the Brimhaven Agility Course",
-        "active": False},
-    {
-        "description": "Pickpocket 6 Blood Shards",
-        "active" : False}]
+    async def complete(self, message, reaction, user):
+        # get user team
+        team_name = self.get_team(str(message.author))
+        team = self.teams[team_name]
+        if team["challenges"] == []:
+            return
+        # check if there are challenges currently
+        # make sure message format
+        messages = message.content.split(' ')
+        if (messages[1] not in '123'
+                or messages[0].lower() != '!complete'):
+            return
+        challenge = team["challenges"][int(messages[1]) - 1]["description"]
+        if str(user) in team["members"]:
+            return
+        team["challenges"] = []
+        team["can_roll"] = True
+        if team['path'] == 'end' and team['tile'] == len(_paths['end']):
+            await message.reply(
+                f"{team_name} wins yay."
+            )
+            return
 
-"Ugh Daddy I'm Clogging" = [{
-        "description": "Obtain a Bryophyta's Essence",
-        "active": False},
-    {
-        "description": "Get a Black Tourmaline Core",
-        "active": False},
-    {
-        "description": "Get any boot drop from a medium clue",
-        "active": False},
-    {
-        "description": "Get any Revenant Weapon",
-        "active": False},
-    {
-        "description" : "Get a Champion Scroll",
-        "active": False},
-    {
-        "description" : "Obtain a complete barb assault outfit(except torso)(you can pick the hat) ",
-        "active" : False},
-    {
-        "description": "Get a Pharaoh's Sceptre",
-        "active": False},
-    {
-        "description": "Any 1 player earn 34 castle wars tickets(enough for a decorative armor set)",
-        "active" : False}]
-
-"Early Game" = [{
-        "description": "Obtain 3 Bandos Uniques",
-        "active": False},
-    {
-        "description": "Get a Barrows Double Chest",
-        "active": False},
-    {
-        "description": "Get 5 DKS rings",
-        "active": False},
-    {
-        "description": "Get any GWD Hilt",
-        "active": False},
-    {
-        "description" : "Get all Zammy uniques",
-        "active": False},
-    {
-        "description" : "Get a Dragon Pickaxe Drop",
-        "active" : False},
-    {
-        "description": "Get 3 Zenytes",
-        "active": False},
-    {
-        "description": "Get a Sarachnis Cudgel",
-        "active": False},
-    {
-        "description": "Complete a Barrows Set",
-        "active": False}]
-
-"Mid Game" = [{
-        "description": "Obtain a Voidwaker Piece",
-        "active": False},
-    {
-        "description": "Get 3 zulrah drops or a mutagen",
-        "active": False},
-    {
-        "description": "Get 5 Venator Shards. If you get one from a cache, complete the tile",
-        "active": False},
-    {
-        "description": "Get 4 Cerberus Uniques. Pegasian Crystal counts for 2.",
-        "active": False},
-    {
-        "description" : "Get that Thermy staff",
-        "active": False},
-    {
-        "description" : "Complete an Abyssal Bludgeon(as a team, specific parts don't matter)",
-        "active" : False},
-    {
-        "description": "Get an Enhanced Weapon Seed or 4 Armor Seeds",
-        "active": False},
-    {
-        "description": "Any 1 player earn 34 castle wars tickets(enough for a decorative armor set)",
-        "active" : False}]
-
-"Late Game" = [{
-        "description": "Get an Arcane or Dextrous Prayer Scroll",
-        "active": False},
-    {
-        "description": "Get a Lightbearer or Osmumten's Fang",
-        "active": False},
-    {
-        "description": "Get an Avernic Defender Hilt",
-        "active": False},
-    {
-        "description": "Get a Hydra Claw or Hydra Leather",
-        "active": False},
-    {
-        "description" : "Get a ToB Weapon",
-        "active": False},
-    {
-        "description" : "Get a CoX Weapon(butt plug counts, so does Dinny B)",
-        "active" : False},
-    {
-        "description": "Get 2 raid armor drops(Masori/Justi/Ancestral. Shields don't count)",
-        "active": False},
-    {
-        "description": "Get a Soulreaper Axe Piece",
-        "active": False},
-    {
-        "description": "Get 3 Chromium Ingots",
-        "active": False},
-    {
-        "description": "Get 2 Virtus Armor drops(can be the same piece)",
-        "active": False}]
-
-"End Game" = [{
-        "description": "Get an Inquisitor Drop(mace counts) or orb(staff doesn't count lmao)",
-        "active": False},
-    {
-        "description": "Get any Mega Rare or Dragon Claws",
-        "active": False},
-    {
-        "description": "Get 4 nex uniques. Hilt counts for 2.",
-        "active": False},
-    {
-        "description": "Get a CM or HM Tob Kit/Dust",
-        "active": False},
-    {
-        "description" : "Get 3 cox purples",
-        "active": False},
-    {
-        "description" : "Get 5 ToA purples",
-        "active" : False},
-    {
-        "description": "Get 2 Torva Drops",
-        "active": False},
-    {
-        "description": "Get 3 ToA Purples",
-        "active": False},
-    {
-        "description": "Get 3 ToB Purples",
-        "active": False},
-    {
-        "description": "Complete a Virtus Robe Set",
-        "active": False}]
-
-"MYSTERY TILE" = [{
-        "description": "Pay to win: Donate 50m to the clan or go backwards l m a o",
-        "active": False},
-    {
-        "description": "Every teammate has to get a ToB kc. It's cool if people that go out of town or whatever don't do it. Noobs have to get carried though.",
-        "active": False},
-    {
-        "description": "GRIEFER TOB: 3 members of your team must take an enemy(the enemy teams get to choose) to ToB and get a kc. The enemy must do everything they can to stop you. Literally anything goes. The same enemy cannot be chosen twice.",
-        "active": False},
-    {
-        "description": "SHANE TRAIN: Get a deathless Trio CM CoX Kc. Only one player is allowed to click in between phases at Olm. The players must form a train by following each other.",
-        "active": False},
-    {
-        "description": "Autocomplete this tile",
-        "active": False},
-    {
-        "description": "go back lmao",
-        "active": False},
-    {
-        "description": "NO PANTS INFERNOOOOOOOOOOOOOOOOOOOOOOOOO",
-        "active": False}]
+        await message.reply(
+            f"**{team_name}** has completed: *{challenge}*\nThe team has been granted a `!roll`"
+        )
+        self.teams[team_name] = team
+        self.save()

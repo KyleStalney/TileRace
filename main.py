@@ -1,9 +1,9 @@
 import discord
 import logging
 
-from .tilerace import TileRace
+from tilerace import TileRace
 
-TOKEN=''
+TOKEN='MTE2MDAwOTY1ODMzMzkzNzY3NQ.G6c8p4.zsr5nP73KYvDCvxuIEUfwP9FdrQADW_LysLsZs'
 client = discord.Client(intents=discord.Intents.all())
 race = TileRace()
 
@@ -22,6 +22,16 @@ async def on_ready():
     log.info(f'on_ready,{client.user},presence state set')
 
 @client.event
+async def on_reaction_add(reaction, user):
+    kyle = client.get_emoji(1160014756040687626)
+    if reaction.emoji != kyle:
+        return
+    channel = client.get_channel(1159942565408280597)
+    if channel != reaction.message.channel:
+        return
+    await race.complete(reaction.message, reaction, user)
+
+@client.event
 async def on_message(m):
     if m.author == client.user:
         return
@@ -32,6 +42,11 @@ async def on_message(m):
     if m.content == '!roll':
         await race.roll(m)
     if m.content == '!challenges':
-        await race.challenges(m.author)
+        await race.get_challenges(m)
+    if m.content == '!roll_back':
+        await race.roll_back(m)
+    if m.content[0:6] == '!choice':
+        await race.choice(m)
+
 
 client.run(TOKEN)
