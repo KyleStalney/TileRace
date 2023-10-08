@@ -1,0 +1,9 @@
+version: "3.9"
+services:
+ bot:
+  build: .
+  restart: always
+  volumes:
+   - '/var/log:/var/log'
+  environment:
+   - BOT_TOKEN=${BOT_TOKEN}
