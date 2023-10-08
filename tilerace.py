@@ -5,7 +5,7 @@ import logging
 log = logging.getLogger(__name__)
 log.setLevel(logging.INFO)
 
-_tiers = ['Mechanical', 'Minigames', 'Skilling', 'Early Game', 'Mid Game', 'Late Game', 'End Game', 'MYSTERY']
+_tiers = ['Mechanical', 'Clogging', 'Skilling', 'Early Game', 'Mid Game', 'Late Game', 'End Game', 'MYSTERY']
 _paths = {
     'start': [3, 1, 2, 4, 2, 7, 5, 0, 2, 5, 6, 1, 5, 0, 4, 1, 2, 7, 4, 5, 2, 0, 5],
     'long': [7, 0, 6, 5, 3, 1, 2, 5, 3, 4, 2, 1, 7, 4, 3, 0],
