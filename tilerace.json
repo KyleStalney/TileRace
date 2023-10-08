@@ -206,7 +206,7 @@
         "description" : "20 kill whisperer trip"
       },
       {
-        "description" : "Kill Vet'ion at 1hp in Dharok's"
+        "description" : "Kill Vet'ion at 1hp in Full Dharok's"
       }
     ],
     "Skilling": [
@@ -233,6 +233,9 @@
       },
       {
         "description": "Pickpocket 4 Blood Shards"
+      },
+      {
+        "description": "Get something dope from Zalcano"
       }
     ],
     "Clogging": [
@@ -259,6 +262,18 @@
       },
       {
         "description": "Any 1 player earn 34 castle wars tickets(enough for a decorative armor set)"
+      },
+      {
+        "description": "I N F I N I T Y H A T"
+      },
+      {
+        "description": "OBOR CLUB THING"
+      },
+      {
+        "description": "Get full Ancient Ceremonial lmao"
+      },
+      {
+        "description": "Get a Dagon'Hai Piece"
       }
     ],
     "Early Game": [
@@ -288,6 +303,27 @@
       },
       {
         "description": "Complete a Barrows Set"
+      },
+      {
+        "description": "Get a Kraken Tentacle"
+      },
+      {
+        "description": "Get 3 Steam Staffs lmao"
+      },
+      {
+        "description": "Get 3 unsired"
+      },
+      {
+        "description": "Get a Smouldering Stone"
+      },
+      {
+        "description": "Get any Jar"
+      },
+      {
+        "description": "Get 2 Malediction or Odium Shard things"
+      },
+      {
+        "description": "Get 2 sara tears lmao"
       }
     ],
     "Mid Game": [
@@ -311,6 +347,24 @@
       },
       {
         "description": "Get an Enhanced Weapon Seed or 4 Armor Seeds"
+      },
+      {
+        "description": "Get 2 Weapon Seeds from CG"
+      },
+      {
+        "description": "Get a drop from Arma"
+      },
+      {
+        "description": "Get a Treasonous Ring"
+      },
+      {
+        "description": "Get Any Wildy Weapon Upgrade"
+      },
+      {
+        "description": "Get a Ring of the Gods"
+      },
+      {
+        "description": "Get a Hydra Ring Piece"
       }
     ],
     "Late Game": [
@@ -395,7 +449,23 @@
       },
       {
         "description": "NO PANTS INFERNOOOOOOOOOOOOOOOOOOOOOOOOO"
+      },
+      {
+        "description": "5 teammates must win a hard game of Pest control. You get two tries. !roll_back if you fail"
+      },
+      {
+        "description": "Carry 5 0-Kc'ers in ToB. Rando's from 416 count for 2."
+      },
+      {
+        "descrption": "Get any drop in a quantity of 69. Must show the runelite drop thingy."
+      },
+      {
+        "description": "4 teammates must get 4 different hats from Barb assault. Take a dope screenshot of your new hats."
+      },
+      {
+        "description": "5 fire cape gambles"
       }
+
     ]
   }
 }

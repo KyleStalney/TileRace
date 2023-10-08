@@ -85,13 +85,13 @@ class TileRace:
     async def signup(self, message):
         if message.author not in self.signups:
             self.signups.append(str(message.author))
-        kyle = await message.guild.fetch_emoji(1160014756040687626)
+        kyle = await message.guild.fetch_emoji(882001528146235494)#882001528146235494 is reborn irons id #1160014756040687626 is dev id
         await message.add_reaction(kyle)
         self.save()
         log.info(f'signup,{message.author},added to signups')
 
     async def list(self, message):
-        mod_role = message.guild.get_role(1160016095428739122)
+        mod_role = message.guild.get_role(1160358985124290560)#1160358985124290560 is el_capitan Reborn Irons. #1160016095428739122 is dev
         if mod_role not in message.author.roles:
             return
         await message.reply('\n'.join(self.signups))
@@ -201,11 +201,9 @@ class TileRace:
             return
         if team["challenges"] == []:
             return
-        mod_role = message.guild.get_role(1160016095428739122)
+        mod_role = message.guild.get_role(1160358985124290560)#1160358985124290560 is Reborn Irons Id #1160016095428739122 is Dev ID
         if mod_role not in user.roles:
             return
-        # check if there are challenges currently
-        # make sure message format
         messages = message.content.split(' ')
         if (messages[1] not in '123'
                 or messages[0].lower() != '!complete'):
@@ -217,7 +215,7 @@ class TileRace:
         team["can_roll"] = True
         await message.add_reaction('✔️')
         if team['path'] == 'end' and team['tile'] == len(_paths['end']) - 1:
-            member_role = message.guild.get_role(1160351670182608946)
+            member_role = message.guild.get_role(691103705587515493)
             await message.reply(
                 f"{member_role.mention}\n"
                 f"{team_name} win : ) yay."

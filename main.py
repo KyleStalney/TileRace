@@ -23,10 +23,10 @@ async def on_ready():
 
 @client.event
 async def on_reaction_add(reaction, user):
-    kyle = client.get_emoji(1160014756040687626)
+    kyle = client.get_emoji(882001528146235494)#882001528146235494 is reborn :kyle: emoji
     if reaction.emoji != kyle:
         return
-    channel = client.get_channel(1159942565408280597)
+    channel = client.get_channel(1158571670215348274)#1158571670215348274 #1159942565408280597
     if channel != reaction.message.channel:
         return
     await race.complete(reaction.message, user)
