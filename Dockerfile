@@ -4,4 +4,4 @@ WORKDIR /bot
 ADD . /bot
 RUN pip install --disable-pip-version-check -q -r requirements.txt
 
-ENTRYPOINT [ "python", "bot.py" ]
+ENTRYPOINT [ "python", "main.py" ]
