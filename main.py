@@ -35,20 +35,21 @@ async def on_reaction_add(reaction, user):
 async def on_message(m):
     if m.author == client.user:
         return
-    if m.content == '!signup':
-        await race.signup(m)
-    if m.content == '!list':
-        await race.list(m)
-    if m.content == '!roll':
-        await race.roll(m)
+    channel = client.get_channel(1158571670215348274)#1158571670215348274 #1159942565408280597
+    if channel == m.channel:
+        if m.content == '!roll':
+            await race.roll(m)
+        if m.content == '!roll_back':
+            await race.roll_back(m)
+        if m.content.startswith('!choice'):
+            await race.choice(m)
     if m.content == '!challenges':
         await m.reply(race.get_challenges(m))
-    if m.content == '!roll_back':
-        await race.roll_back(m)
-    if m.content.startswith('!choice'):
-        await race.choice(m)
+    if m.content == '!signup':
+        await race.signup(m)
     if m.content == '!positions':
         await race.get_position(m)
-
+    if m.content == '!list':
+        await race.list(m)
 
 client.run(TOKEN)
