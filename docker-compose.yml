@@ -5,6 +5,10 @@ services:
   restart: always
   volumes:
    - '/var/log:/var/log'
-   - './tilerace.json:/bot/tilerace.json'
   environment:
-   - BOT_TOKEN=${BOT_TOKEN}
+   - DISCORD_BOTKEY=${DISCORD_BOTKEY}
+ db:
+  image: redis:6.2.5-alpine
+  restart: always
+  volumes:
+   - '/var/opt/redis:/data'

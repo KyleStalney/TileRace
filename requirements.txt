@@ -1,1 +1,3 @@
-discord.py
+--pre
+redis
+py-cord
