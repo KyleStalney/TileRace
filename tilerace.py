@@ -97,11 +97,12 @@ class TileRace:
         await message.reply('\n'.join(self.signups))
 
     def get_challenges(self, message):
-        team = self.teams[self.get_team(message.author)]
+        team_name = self.get_team(message.author)
+        team = self.teams[team_name]
         challenges = [x["description"] for x in team["challenges"]]
         for i in range(len(challenges)):
             challenges[i] = f"{i + 1}. {challenges[i]}"
-        return "## Current Challenges\n" + '\n'.join(challenges)
+        return f"## Current Challenges for {team_name}\n" + '\n'.join(challenges)
 
     async def get_position(self, message):
         locations = "\n".join(
@@ -126,7 +127,7 @@ class TileRace:
             a = 'an'
         await message.reply(
             f"You have rolled a {dice}.\n"
-            f"This brings you back to position **{new_pos + 1}** on the {team['path'].title()} path, which is {a} **{team['tile_tier']} tile**.\n"
+            f"This brings **{team_name}** back to position **{new_pos + 1}** on the {team['path'].title()} path, which is {a} **{team['tile_tier']} tile**.\n"
             f"{self.get_challenges(message)}"
         )
         self.teams[team_name] = team
@@ -189,8 +190,8 @@ class TileRace:
                 f"You rolled a {dice}!\nMoving **{team_name}** to position {new_pos + 1} on path {team['path'].title()}, which is {a} {team['tile_tier']} tile."
             )
         self.teams[team_name] = team
-        self.save()
         self.setup_challenges(team)
+        self.save()
         await message.reply(response + "\n\n" + self.get_challenges(message))
 
     async def complete(self, message, user):
