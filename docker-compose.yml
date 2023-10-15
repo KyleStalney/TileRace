@@ -6,4 +6,9 @@ services:
   volumes:
    - '/var/log:/var/log'
   environment:
-   - BOT_TOKEN=${BOT_TOKEN}
+   - DISCORD_BOTKEY=${DISCORD_BOTKEY}
+ db:
+  image: redis:7.2.1-alpine
+  restart: always
+  volumes:
+   - '/var/opt/osrs_games_db:/data'
