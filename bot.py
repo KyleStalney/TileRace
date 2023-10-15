@@ -14,12 +14,14 @@ discord_log = logging.getLogger('discord')
 discord_log.setLevel(logging.ERROR)
 
 def main():
-    bot = commands.Bot(command_prefix='!',
-                       debug_guilds=[1159942455752409118],
-                       intents=discord.Intents.all())
+    bot = commands.Bot(
+        command_prefix='!',
+        debug_guilds=[1159942455752409118],
+        intents=discord.Intents.all()
+    )
 
     # commands
-    bot.add_cog(misc.Misc(bot))
+    bot.add_cog(config.Config(bot))
 
     # handlers
     bot.add_cog(ready.Ready(bot))

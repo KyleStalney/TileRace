@@ -13,6 +13,9 @@ make clean
 ## TODO
 
 - global mod commands
+    - admin
+        - control settings
+        - setup roles and enable/disable games
 	- teams
 		- gen team from WOM api
 		- add member to team
